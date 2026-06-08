@@ -16,11 +16,11 @@ Returns:
 
 ```json
 {
-  "title": "Rafi কে call",
+  "title": "Rafi call",
   "date": "2026-06-09",
   "time": "20:00",
   "datetime": "2026-06-09T20:00:00",
-  "confidence": 1,
+  "confidence": 0.98,
   "localeHints": {
     "banglaDigits": true,
     "matchedDate": "tomorrow",
@@ -35,6 +35,8 @@ Many reminder and productivity apps handle English phrases well, but Bangla and 
 
 - `আগামীকাল রাত ৮টায় Rafi কে call`
 - `kal shokal 9 meeting`
+- `শুক্রবার সকাল ৯টায় standup meeting`
+- `১৫ জুন রাত ৮টায় bill pay`
 - `Remind me to submit invoice tomorrow at 10:30 am`
 - `পরশু বিকেল ৫টায় medicine কিনতে হবে`
 
@@ -69,7 +71,7 @@ npm run parse -- "আগামীকাল রাত ৮টায় Rafi কে ca
 
 Options:
 
-- `referenceDate`: optional `Date`, used to resolve `today`, `tomorrow`, `আজ`, `আগামীকাল`, and `পরশু`.
+- `referenceDate`: optional `Date`, used to resolve relative days, weekdays, and month-name dates.
 
 Output fields:
 
@@ -84,15 +86,16 @@ Output fields:
 
 - Bangla digits: `০১২৩৪৫৬৭৮৯`
 - Relative days: `আজ`, `আগামীকাল`, `কাল`, `পরশু`, `today`, `tomorrow`, `kal`, `porshu`
+- Weekdays: `রবিবার` through `শনিবার`, plus common English and Banglish variants
+- Month names: English and Bengali month names such as `June`, `জুন`, `January`, `জানুয়ারি`
 - Time periods: `সকাল`, `দুপুর`, `বিকেল`, `সন্ধ্যা`, `রাত`, and common Banglish variants
 - Explicit dates like `12/06` and `12/06/2026`
 - Explicit times like `8`, `8:30`, `10:30 am`, `5 pm`
 
 ## Roadmap
 
-- Weekday parsing: `রবিবার`, `Monday`
-- Bengali month names
 - Better task-title cleanup for postpositions
+- Date ranges and recurring reminders
 - TypeScript type definitions
 - More examples from real reminder apps
 

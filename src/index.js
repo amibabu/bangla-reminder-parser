@@ -12,9 +12,9 @@ const BANGLA_DIGITS = new Map([
 ]);
 
 const RELATIVE_DAYS = [
-  { pattern: /\b(today|aj|aaj)\b|আজ/i, offset: 0, label: "today" },
-  { pattern: /\b(tomorrow|kal|agamikal|agami kal)\b|আগামীকাল|কাল/i, offset: 1, label: "tomorrow" },
-  { pattern: /\b(day after tomorrow|porshu|poroshu)\b|পরশু/i, offset: 2, label: "day-after-tomorrow" }
+  { pattern: /\b(today|aj|aaj)\b|(^|\s)আজ(?=\s|$)/i, offset: 0, label: "today" },
+  { pattern: /\b(tomorrow|kal|agamikal|agami kal)\b|(^|\s)(আগামীকাল|কাল)(?=\s|$)/i, offset: 1, label: "tomorrow" },
+  { pattern: /\b(day after tomorrow|porshu|poroshu)\b|(^|\s)পরশু(?=\s|$)/i, offset: 2, label: "day-after-tomorrow" }
 ];
 
 const TIME_MARKERS = [
@@ -23,6 +23,31 @@ const TIME_MARKERS = [
   { pattern: /\b(afternoon|bikel|bikal)\b|বিকেল/i, hour: 16 },
   { pattern: /\b(evening|shondha|sondha|sandhya)\b|সন্ধ্যা/i, hour: 18 },
   { pattern: /\b(night|raat|rat)\b|রাত/i, hour: 21 }
+];
+
+const WEEKDAYS = [
+  { pattern: /\b(sunday|sun|robi|robibar)\b|রবিবার|রবি/i, day: 0, label: "weekday-sunday" },
+  { pattern: /\b(monday|mon|shom|sombar|shombar)\b|সোমবার|সোম/i, day: 1, label: "weekday-monday" },
+  { pattern: /\b(tuesday|tue|mongol|mongolbar)\b|মঙ্গলবার|মঙ্গল/i, day: 2, label: "weekday-tuesday" },
+  { pattern: /\b(wednesday|wed|budh|budhbar)\b|বুধবার|বুধ/i, day: 3, label: "weekday-wednesday" },
+  { pattern: /\b(thursday|thu|brihospoti|brihoshpotibar)\b|বৃহস্পতিবার|বৃহস্পতি/i, day: 4, label: "weekday-thursday" },
+  { pattern: /\b(friday|fri|shukro|shukrabar)\b|শুক্রবার|শুক্র/i, day: 5, label: "weekday-friday" },
+  { pattern: /\b(saturday|sat|shoni|shonibar)\b|শনিবার|শনি/i, day: 6, label: "weekday-saturday" }
+];
+
+const MONTHS = [
+  { pattern: /\b(january|jan)\b|জানুয়ারি|জানুয়ারি/i, month: 1 },
+  { pattern: /\b(february|feb)\b|ফেব্রুয়ারি|ফেব্রুয়ারি/i, month: 2 },
+  { pattern: /\b(march|mar)\b|মার্চ/i, month: 3 },
+  { pattern: /\b(april|apr)\b|এপ্রিল/i, month: 4 },
+  { pattern: /\b(may)\b|মে/i, month: 5 },
+  { pattern: /\b(june|jun)\b|জুন/i, month: 6 },
+  { pattern: /\b(july|jul)\b|জুলাই/i, month: 7 },
+  { pattern: /\b(august|aug)\b|আগস্ট/i, month: 8 },
+  { pattern: /\b(september|sep|sept)\b|সেপ্টেম্বর/i, month: 9 },
+  { pattern: /\b(october|oct)\b|অক্টোবর/i, month: 10 },
+  { pattern: /\b(november|nov)\b|নভেম্বর/i, month: 11 },
+  { pattern: /\b(december|dec)\b|ডিসেম্বর/i, month: 12 }
 ];
 
 const COMMAND_WORDS = [
@@ -77,7 +102,7 @@ function parseDate(value, referenceDate) {
       return {
         date: toIsoDate(date),
         label: item.label,
-        matchedText: match[0]
+        matchedText: match[0].trim()
       };
     }
   }
@@ -91,6 +116,71 @@ function parseDate(value, referenceDate) {
       date: toIsoDate(new Date(year, month - 1, day)),
       label: "explicit-date",
       matchedText: slashDate[0]
+    };
+  }
+
+  const monthDate = parseMonthDate(value, referenceDate);
+  if (monthDate) return monthDate;
+
+  const weekdayDate = parseWeekday(value, referenceDate);
+  if (weekdayDate) return weekdayDate;
+
+  return null;
+}
+
+function parseMonthDate(value, referenceDate) {
+  for (const item of MONTHS) {
+    const monthMatch = value.match(item.pattern);
+    if (!monthMatch) continue;
+
+    const monthIndex = monthMatch.index ?? 0;
+    const beforeMonth = value.slice(0, monthIndex);
+    const afterMonth = value.slice(monthIndex + monthMatch[0].length);
+    const beforeDay = beforeMonth.match(/(\d{1,2})\s*$/);
+    const afterDay = afterMonth.match(/^\s*(\d{1,2})/);
+    const dayMatch = beforeDay ?? afterDay;
+    if (!dayMatch) continue;
+
+    const yearMatch = afterMonth.match(/\b(20\d{2})\b/);
+    const day = Number(dayMatch[1]);
+    let year = yearMatch ? normalizeYear(Number(yearMatch[1])) : referenceDate.getFullYear();
+    let date = new Date(year, item.month - 1, day);
+    if (!yearMatch && date < referenceDate) {
+      date = new Date(year + 1, item.month - 1, day);
+      year = year + 1;
+    }
+
+    return {
+      date: toIsoDate(date),
+      label: "month-name-date",
+      matchedText: buildMonthDateMatchedText({ beforeDay, dayMatch, monthMatch, yearMatch })
+    };
+  }
+
+  return null;
+}
+
+function buildMonthDateMatchedText({ beforeDay, dayMatch, monthMatch, yearMatch }) {
+  const day = dayMatch[1];
+  const month = monthMatch[0];
+  const year = yearMatch?.[0];
+  return beforeDay
+    ? [day, month, year].filter(Boolean).join(" ")
+    : [month, day, year].filter(Boolean).join(" ");
+}
+
+function parseWeekday(value, referenceDate) {
+  for (const item of WEEKDAYS) {
+    const match = value.match(item.pattern);
+    if (!match) continue;
+
+    let daysAhead = item.day - referenceDate.getDay();
+    if (daysAhead <= 0) daysAhead += 7;
+
+    return {
+      date: toIsoDate(addDays(referenceDate, daysAhead)),
+      label: item.label,
+      matchedText: match[0]
     };
   }
 

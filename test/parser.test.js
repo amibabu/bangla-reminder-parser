@@ -31,3 +31,28 @@ test("parses explicit date", () => {
   assert.equal(result.date, "2026-06-12");
   assert.equal(result.time, "17:00");
 });
+
+test("parses Bangla weekday", () => {
+  const result = parseReminder("শুক্রবার সকাল ৯টায় standup meeting", { referenceDate });
+
+  assert.equal(result.date, "2026-06-12");
+  assert.equal(result.time, "09:00");
+  assert.equal(result.localeHints.matchedDate, "weekday-friday");
+  assert.equal(result.title, "standup meeting");
+});
+
+test("parses Bangla month name date", () => {
+  const result = parseReminder("১৫ জুন রাত ৮টায় bill pay", { referenceDate });
+
+  assert.equal(result.date, "2026-06-15");
+  assert.equal(result.time, "20:00");
+  assert.equal(result.localeHints.matchedDate, "month-name-date");
+  assert.equal(result.title, "bill pay");
+});
+
+test("rolls month-name date into next year when needed", () => {
+  const result = parseReminder("১ জানুয়ারি সকাল ১০টায় renew license", { referenceDate });
+
+  assert.equal(result.date, "2027-01-01");
+  assert.equal(result.time, "10:00");
+});

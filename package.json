@@ -1,6 +1,6 @@
 {
   "name": "bangla-reminder-parser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Parse Bangla and Banglish reminder text into structured tasks with dates and times.",
   "type": "module",
   "main": "src/index.js",
